@@ -1,6 +1,10 @@
 unicode
 =======
 
+This package is no longer supported because it was flagged by Google Dart developers as being published by an unknown person.  
+Publisher Unknown.  
+As a normal person, I believe that hardly anyone would want to use software from unknown publishers.  
+
 Unicode characters library auto generated from http://www.unicode.org.
 
 Unicode Version 13.0.0
