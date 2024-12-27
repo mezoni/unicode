@@ -1,3 +1,12 @@
+## 1.1.1
+
+- Added new feature: Unicode category enumeration `UnicodeCategory`.
+
+## 1.1.0
+
+- Added new feature: simple character decomposition.
+- Added new feature: Unicode blocks.
+
 ## 1.0.0
 
 - Breaking changes: The names of some public fields and functions have been changed. Also, some public library members have been removed or replaced with more effective ones. This was done because this package had not been maintained for quite a long time (more than 3 years). The current implementation is lighter and retains the previous functionality.

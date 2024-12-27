@@ -46,7 +46,7 @@ const categoryNames = {
 };
 
 Future<String> _getDatabaseSource() async {
-  final file = File('tool/UnicodeData.txt');
+  final file = File('../UCD/UnicodeData.txt');
   return file.readAsString();
 }
 
@@ -62,6 +62,10 @@ Future<void> _testDatabase() async {
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
+      if (line.startsWith('#') || line.isEmpty) {
+        continue;
+      }
+
       final fields = line.split(';');
       final character = int.parse(fields[0], radix: 16);
       final category = fields[2];
