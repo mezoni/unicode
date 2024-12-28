@@ -1,3 +1,7 @@
+## 1.1.4
+
+- Added new feature: Possibility to obtain mapping information from the decomposer.
+
 ## 1.1.3
 
 - Minor changes in `Emoji.toString()`.

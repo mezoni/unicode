@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:simple_sparse_list/simple_sparse_list.dart';
 
 import '../decomposer.dart';
@@ -13,6 +15,13 @@ class NarrowDecomposer extends Decomposer {
 
     final result = _data[character];
     return result?.toList();
+  }
+
+  @override
+  List<(int, List<int>)> getMappingList() {
+    final groups = _data.getGroups();
+    final result = groups.map((e) => (e.$1, e.$3!));
+    return UnmodifiableListView(result);
   }
 }
 

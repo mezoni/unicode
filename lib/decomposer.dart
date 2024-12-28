@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:simple_sparse_list/simple_sparse_list.dart';
 
 /// The simplest non-recursive decomposition algorithm.
@@ -31,6 +33,8 @@ abstract class Decomposer {
   const Decomposer();
 
   List<int>? decompose(int character);
+
+  List<(int, List<int>)> getMappingList();
 }
 
 class LetterCasingDecomposer extends Decomposer {
@@ -48,6 +52,12 @@ class LetterCasingDecomposer extends Decomposer {
     final delta = _data[character];
     final result = delta == null ? null : [character + delta];
     return result;
+  }
+
+  @override
+  List<(int, List<int>)> getMappingList() {
+    final result = <(int, List<int>)>[];
+    return UnmodifiableListView(result);
   }
 }
 
@@ -67,5 +77,10 @@ class LetterMappingDecomposer extends Decomposer {
     final value = _data[character];
     final result = value == null ? null : [value];
     return result;
+  }
+
+  @override
+  List<(int, List<int>)> getMappingList() {
+    throw UnsupportedError('getMappingList()');
   }
 }
