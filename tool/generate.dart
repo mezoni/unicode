@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:simple_sparse_list/ranges_helper.dart';
@@ -5,6 +6,7 @@ import 'package:simple_sparse_list/ranges_helper.dart';
 import 'camelize.dart';
 
 void main(List<String> args) {
+  _generateEmoji();
   _generate();
   _generateBlocks();
 }
@@ -469,4 +471,139 @@ final _data = SparseList([${data.join(', ')}], UnicodeBlock.noBlock);
 ''';
 
   File('lib/blocks.dart').writeAsStringSync(template);
+}
+
+void _generateEmoji() {
+  final file = File('../UCD/emoji/emoji-test.txt');
+  final lines = file.readAsLinesSync();
+  var group = '';
+  var subgroup = '';
+  final buffer = StringBuffer();
+  for (final line in lines) {
+    if (line.startsWith('# group:')) {
+      group = line.substring('# group:'.length).trim();
+      continue;
+    }
+
+    if (line.startsWith('# subgroup:')) {
+      subgroup = line.substring('# subgroup:'.length).trim();
+      continue;
+    }
+
+    if (line.isEmpty || line.startsWith('#')) {
+      continue;
+    }
+
+    final fields = line.split(';');
+    final codes = fields[0].trim();
+    final field1 = fields[1];
+    final field1Parts = field1.split('#');
+    final qualification = field1Parts[0].trim();
+    final comment = field1Parts[1].trim();
+    var indexCount = 0;
+    final nameCodes = comment.codeUnits.skipWhile((e) {
+      if (e == 32) {
+        indexCount++;
+      }
+
+      return indexCount < 2;
+    }).toList();
+    final fullname = String.fromCharCodes(nameCodes).trim();
+    final fullnameParts = fullname.split(':');
+    var name = fullnameParts[0].trim();
+    var presentation = fullnameParts.length > 1 ? fullnameParts[1].trim() : '';
+    name = name.replaceAll('\'', r"\'");
+    presentation = presentation.replaceAll('\'', r"\'");
+    buffer
+        .writeln('$codes:$qualification:$name:$presentation:$group:$subgroup');
+  }
+
+  final packed = gzip.encode('$buffer'.codeUnits);
+  final encoded = base64.encode(packed);
+  final template = '''
+import 'dart:collection';
+import 'dart:convert';
+import 'dart:io';
+
+/// Returns a list of Unicode emoji.
+List<Emoji> getUnicodeEmojiList() => _data;
+
+/// Represents information about Emoji.
+class Emoji {
+  final String group;
+
+  final String name;
+
+  final String presentation;
+
+  final String qualification;
+
+  final List<int> sequence;
+
+  final String subgroup;
+
+  Emoji(
+      {required this.group,
+      required this.name,
+      required this.presentation,
+      required this.qualification,
+      required this.sequence,
+      required this.subgroup});
+
+  @override
+  String toString() {
+    if (presentation.isEmpty) {
+      return name;
+    }
+
+    var string = '';
+    if (sequence.isNotEmpty) {
+      string = String.fromCharCodes(sequence);
+    }
+
+    return '\$string \$name: \$presentation';
+  }
+}
+
+
+List<Emoji> _build(String data) {
+  final result = <Emoji>[];
+  final encoded = base64.decode(data);
+  final charCodes = gzip.decode(encoded);
+  final source = String.fromCharCodes(charCodes);
+  final cache = <String, String>{};
+  final lines = const LineSplitter().convert(source);
+
+  String fromCache(String s) {
+    cache[s] ??= s;
+    return cache[s]!;
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final parts = line.split(':');
+    final sequence =
+        parts[0].split(' ').map((e) => int.parse(e, radix: 16)).toList();
+    final qualification = fromCache(parts[1]);
+    final name = fromCache(parts[2]);
+    final presentation = fromCache(parts[3]);
+    final group = fromCache(parts[4]);
+    final subgroup = fromCache(parts[5]);
+    final emoji = Emoji(
+        group: group,
+        name: name,
+        presentation: presentation,
+        qualification: qualification,
+        sequence: UnmodifiableListView(sequence),
+        subgroup: subgroup);
+    result.add(emoji);
+  }
+
+  return UnmodifiableListView(result);
+}
+
+final _data = _build('$encoded');
+''';
+
+  File('lib/emoji/emoji.dart').writeAsStringSync(template);
 }

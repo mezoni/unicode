@@ -1,3 +1,8 @@
+## 1.1.2
+
+- Added new feature: Support of Unicode Emojis.
+- Added new feature: Processing data with character sequences.
+
 ## 1.1.1
 
 - Added new feature: Unicode category enumeration `UnicodeCategory`.

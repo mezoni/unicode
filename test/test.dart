@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:sequence_processor/sequence_processor.dart';
 import 'package:test/test.dart';
+import 'package:unicode/emoji/emoji.dart';
 import 'package:unicode/unicode.dart' as unicode;
 import 'package:unicode/unicode.dart';
 
@@ -10,6 +12,7 @@ Future<void> main() async {
   _testRunes();
   _testStringToLetterCase();
   _testCharToLetterCase();
+  _testEmoji();
 }
 
 const categoryNames = {
@@ -48,6 +51,53 @@ const categoryNames = {
 Future<String> _getDatabaseSource() async {
   final file = File('../UCD/UnicodeData.txt');
   return file.readAsString();
+}
+
+void _testCharToLetterCase() {
+  test('Char to letter case', () {
+    {
+      final r1 = toRune('а');
+      final r2 = charToUpperCase(r1);
+      final r3 = toRune('А');
+      expect(r2, r3, reason: 'charToUpperCase()');
+    }
+    {
+      final r1 = toRune('А');
+      final r2 = charToLowerCase(r1);
+      final r3 = toRune('а');
+      expect(r2, r3, reason: 'charToLowerCase()');
+    }
+    {
+      final r1 = toRune('а');
+      final r2 = charToTitleCase(r1);
+      final r3 = toRune('А');
+      expect(r2, r3, reason: 'charToTitleCase()');
+    }
+    {
+      final r1 = toRune('ǆ');
+      final r2 = charToUpperCase(r1);
+      final r3 = toRune('Ǆ');
+      expect(r2, r3, reason: 'charToUpperCase()');
+    }
+    {
+      final r1 = toRune('Ǆ');
+      final r2 = charToLowerCase(r1);
+      final r3 = toRune('ǆ');
+      expect(r2, r3, reason: 'charToLowerCase()');
+    }
+    {
+      final r1 = toRune('ǆ');
+      final r2 = charToTitleCase(r1);
+      final r3 = toRune('ǅ');
+      expect(r2, r3, reason: 'charToTitleCase()');
+    }
+    {
+      final r1 = toRune('Ǆ');
+      final r2 = charToTitleCase(r1);
+      final r3 = toRune('ǅ');
+      expect(r2, r3, reason: 'charToTitleCase()');
+    }
+  });
 }
 
 Future<void> _testDatabase() async {
@@ -160,49 +210,41 @@ Future<void> _testDatabase() async {
   });
 }
 
-void _testCharToLetterCase() {
-  test('Char to letter case', () {
+void _testEmoji() {
+  final emojis = getUnicodeEmojiList();
+  final processor = SequenceProcessor<int, Emoji>();
+  for (final emoji in emojis) {
+    processor.addSequence(emoji.sequence, emoji);
+  }
+
+  test('Emoji', () {
     {
-      final r1 = toRune('а');
-      final r2 = charToUpperCase(r1);
-      final r3 = toRune('А');
-      expect(r2, r3, reason: 'charToUpperCase()');
+      expect(emojis.length, 5042, reason: 'Emoji list length');
+
+      final count =
+          emojis.map((e) => '${e.name}:${e.presentation}').toSet().length;
+      expect(count, 3790, reason: 'Emoji name count');
     }
     {
-      final r1 = toRune('А');
-      final r2 = charToLowerCase(r1);
-      final r3 = toRune('а');
-      expect(r2, r3, reason: 'charToLowerCase()');
-    }
-    {
-      final r1 = toRune('а');
-      final r2 = charToTitleCase(r1);
-      final r3 = toRune('А');
-      expect(r2, r3, reason: 'charToTitleCase()');
-    }
-    {
-      final r1 = toRune('ǆ');
-      final r2 = charToUpperCase(r1);
-      final r3 = toRune('Ǆ');
-      expect(r2, r3, reason: 'charToUpperCase()');
-    }
-    {
-      final r1 = toRune('Ǆ');
-      final r2 = charToLowerCase(r1);
-      final r3 = toRune('ǆ');
-      expect(r2, r3, reason: 'charToLowerCase()');
-    }
-    {
-      final r1 = toRune('ǆ');
-      final r2 = charToTitleCase(r1);
-      final r3 = toRune('ǅ');
-      expect(r2, r3, reason: 'charToTitleCase()');
-    }
-    {
-      final r1 = toRune('Ǆ');
-      final r2 = charToTitleCase(r1);
-      final r3 = toRune('ǅ');
-      expect(r2, r3, reason: 'charToTitleCase()');
+      const r1 = 'I 💗 you! ❤️‍🔥 ';
+      final r2 = processor.process(r1.runes.toList());
+      final foundEmojis = r2.where((e) => e.data is Emoji).toList();
+      expect(foundEmojis.length, 2, reason: 'Emoji count');
+      expect(foundEmojis[0].index, 2, reason: 'Emoji 1 index');
+      expect(foundEmojis[1].index, 9, reason: 'Emoji 2 index');
+      expect(
+          foundEmojis
+              .map((e) => String.fromCharCodes(e.data!.sequence))
+              .toList(),
+          ['💗', '❤️‍🔥'],
+          reason: 'Found emojis');
+      expect(
+          r2
+              .where((e) => e.data is! Emoji)
+              .map((e) => String.fromCharCode(e.element!))
+              .join(),
+          'I  you!  ',
+          reason: 'Text without emoji');
     }
   });
 }
