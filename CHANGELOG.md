@@ -1,3 +1,7 @@
+## 1.1.3
+
+- Minor changes in `Emoji.toString()`.
+
 ## 1.1.2
 
 - Added new feature: Support of Unicode Emojis.

@@ -29,13 +29,13 @@ class Emoji {
 
   @override
   String toString() {
-    if (presentation.isEmpty) {
-      return name;
-    }
-
     var string = '';
     if (sequence.isNotEmpty) {
       string = String.fromCharCodes(sequence);
+    }
+
+    if (presentation.isEmpty) {
+      return '$string $name';
     }
 
     return '$string $name: $presentation';
