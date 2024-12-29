@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:unicode/emoji/emoji.dart';
 
 void main(List<String> args) {
@@ -10,6 +12,29 @@ void main(List<String> args) {
   print(redHeartUnqualified);
 
   print('I $redHeart you!');
+
+  final names = getUnicodeEmojiList().map((e) => e.name).toList();
+  final names2 = <String>[];
+  final r = Random();
+  for (var i = 0; i < 10000; i++) {
+    final value = r.nextInt(names.length - 1);
+    names2.add(names[value]);
+  }
+
+  final sw = Stopwatch();
+  sw.start();
+  for (var i = 0; i < names2.length; i++) {
+    final name = names2[i];
+    // ignore: unused_local_variable
+    final element = Emoji.findByName(name);
+  }
+
+  sw.stop();
+  print('''
+Performance test:
+Info: Emoji.getByName()
+Number of calls: ${names2.length}
+Elapsed time (sec): ${sw.elapsedMilliseconds / 1000}''');
 }
 
 final heartWithArrow = _findEmoji('heart with arrow');
