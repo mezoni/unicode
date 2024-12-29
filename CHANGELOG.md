@@ -1,3 +1,7 @@
+## 1.1.7
+
+-
+
 ## 1.1.6
 
 - Breaking change: The `sequence` field of class `Emoji` has been renamed to `codePoints`.
