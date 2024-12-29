@@ -505,36 +505,36 @@ void _generateEmoji() {
 
     String getRest(String text, int sep, int count) {
       var indexCount = 0;
-      final charCodes = text.codeUnits.skipWhile((e) {
+      final codeUnits = text.codeUnits.skipWhile((e) {
         if (e == sep) {
           indexCount++;
         }
 
         return indexCount < count;
       }).toList();
-      return charCodes.isEmpty ? '' : String.fromCharCodes(charCodes.skip(1));
+      return codeUnits.isEmpty ? '' : String.fromCharCodes(codeUnits.skip(1));
     }
 
     final fields = line.split(';');
-    final codes = fields[0].trim();
+    final codePoints = fields[0].trim();
     final field1 = fields[1];
     final field1Parts = field1.split('#');
-    final qualification = field1Parts[0].trim();
+    final status = field1Parts[0].trim();
     final comment = getRest(line, '#'.codeUnitAt(0), 1).trim();
+    if (comment.contains(';')) {
+      throw StateError("Comment contains ';'");
+    }
+
     final commentParts = comment.split(' ');
-    final version = commentParts[1];
-    final fullname = getRest(comment, 32, 2);
-    final fullnameParts = fullname.split(':');
-    var name = fullnameParts[0].trim();
-    var presentation = fullnameParts.length > 1 ? fullnameParts[1].trim() : '';
+    var version = commentParts[1];
+    var name = getRest(comment, 32, 2);
     if (!version.startsWith('E')) {
       throw StateError('Invalid version: $version');
     }
 
+    version = version.substring(1);
     name = name.replaceAll('\'', r"\'");
-    presentation = presentation.replaceAll('\'', r"\'");
-    buffer.writeln(
-        '$codes:$qualification:$name:$presentation:$group:$subgroup:$version');
+    buffer.writeln('$codePoints;$status;$name;$group;$subgroup;$version');
   }
 
   final packed = gzip.encode('$buffer'.codeUnits);
@@ -547,43 +547,117 @@ import 'dart:io';
 /// Returns a list of Unicode emoji.
 List<Emoji> getUnicodeEmojiList() => _data;
 
+enum EmojiStatus { component, fullyQualified, minimallyQualified, unqualified }
+
 /// Represents information about Emoji.
 class Emoji {
+  final List<int> codePoints;
+
   final String group;
 
   final String name;
 
-  final String presentation;
-
-  final String qualification;
-
-  final List<int> sequence;
+  final EmojiStatus status;
 
   final String subgroup;
 
   final String version;
 
-  Emoji(
-      {required this.group,
-      required this.name,
-      required this.presentation,
-      required this.qualification,
-      required this.sequence,
-      required this.subgroup,
-      required this.version});
+  Emoji({
+    required this.codePoints,
+    required this.group,
+    required this.name,
+    required this.status,
+    required this.subgroup,
+    required this.version,
+  });
 
   @override
   String toString() {
-    var string = '';
-    if (sequence.isNotEmpty) {
-      string = String.fromCharCodes(sequence);
+    return String.fromCharCodes(codePoints);
+  }
+
+  /// Searches for emoji by name.
+  ///
+  /// The search is performed using the binary search algorithm.
+  ///
+  /// If a [status] value is specified, an emoji with the specified [status] is
+  /// searched for.
+  ///
+  /// If no [status] value is specified, the emoji with the best [status] is
+  /// searched for.
+  ///
+  /// In either case, if the [name] lookup succeeds and the [status] lookup
+  /// fails, the best value found is returned.
+  ///
+  /// Since searching is a resource-intensive operation, it is recommended to
+  /// call this method only to initialize static variables.
+  static Emoji? findByName(String name, {EmojiStatus? status}) {
+    var left = 0;
+    var right = _data.length;
+    int middle;
+    while (left < right) {
+      middle = (left + right) >> 1;
+      final element = _data[middle];
+      final result = name.compareTo(element.name);
+      if (result > 0) {
+        left = middle + 1;
+      } else if (result < 0) {
+        right = middle;
+      } else if (result == 0) {
+        if (element.status == status) {
+          return element;
+        }
+
+        final elements = [element];
+        for (var i = middle + 1; i < right; i++) {
+          final value = _data[i];
+          if (value.name != name) {
+            break;
+          }
+
+          if (value.status == status) {
+            return value;
+          }
+
+          elements.add(value);
+        }
+
+        for (var i = middle - 1; i >= 0; i--) {
+          final value = _data[i];
+          if (value.name != name) {
+            break;
+          }
+
+          if (value.status == status) {
+            return value;
+          }
+
+          elements.add(value);
+        }
+
+        elements.sort((a, b) {
+          int getRank(EmojiStatus s) {
+            switch (s) {
+              case EmojiStatus.component:
+                return 3;
+              case EmojiStatus.fullyQualified:
+                return 0;
+              case EmojiStatus.minimallyQualified:
+                return 1;
+              case EmojiStatus.unqualified:
+                return 2;
+            }
+          }
+
+          return getRank(a.status).compareTo(getRank(b.status));
+        });
+
+        return elements.first;
+      }
     }
 
-    if (presentation.isEmpty) {
-      return '\$string \$name';
-    }
-
-    return '\$string \$name: \$presentation';
+    return null;
   }
 }
 
@@ -602,26 +676,43 @@ List<Emoji> _build(String data) {
 
   for (var i = 0; i < lines.length; i++) {
     final line = lines[i];
-    final parts = line.split(':');
+    final parts = line.split(';');
     final sequence =
         parts[0].split(' ').map((e) => int.parse(e, radix: 16)).toList();
-    final qualification = fromCache(parts[1]);
+    final status = fromCache(parts[1]);
     final name = fromCache(parts[2]);
-    final presentation = fromCache(parts[3]);
-    final group = fromCache(parts[4]);
-    final subgroup = fromCache(parts[5]);
-    final version = fromCache(parts[6]);
+    final group = fromCache(parts[3]);
+    final subgroup = fromCache(parts[4]);
+    final version = fromCache(parts[5]);
+
+    EmojiStatus findStatus(String name) {
+      switch (name) {
+        case 'fully-qualified':
+          return EmojiStatus.fullyQualified;
+        case 'minimally-qualified':
+          return EmojiStatus.minimallyQualified;
+        case 'unqualified':
+          return EmojiStatus.unqualified;
+        case 'component':
+          return EmojiStatus.component;
+        default:
+          throw StateError('Internal error: unknown emoji status (\$status)');
+      }
+    }
+
     final emoji = Emoji(
+        codePoints: UnmodifiableListView(sequence),
         group: group,
         name: name,
-        presentation: presentation,
-        qualification: qualification,
-        sequence: UnmodifiableListView(sequence),
+        status: findStatus(status),
         subgroup: subgroup,
         version: version);
     result.add(emoji);
   }
 
+  result.sort((a, b) {
+    return a.name.compareTo(b.name);
+  });
   return UnmodifiableListView(result);
 }
 

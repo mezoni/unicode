@@ -214,15 +214,14 @@ void _testEmoji() {
   final emojis = getUnicodeEmojiList();
   final processor = SequenceProcessor<int, Emoji>();
   for (final emoji in emojis) {
-    processor.addSequence(emoji.sequence, emoji);
+    processor.addSequence(emoji.codePoints, emoji);
   }
 
   test('Emoji', () {
     {
       expect(emojis.length, 5042, reason: 'Emoji list length');
 
-      final count =
-          emojis.map((e) => '${e.name}:${e.presentation}').toSet().length;
+      final count = emojis.map((e) => e.name).toSet().length;
       expect(count, 3790, reason: 'Emoji name count');
     }
     {
@@ -234,7 +233,7 @@ void _testEmoji() {
       expect(foundEmojis[1].index, 9, reason: 'Emoji 2 index');
       expect(
           foundEmojis
-              .map((e) => String.fromCharCodes(e.data!.sequence))
+              .map((e) => String.fromCharCodes(e.data!.codePoints))
               .toList(),
           ['💗', '❤️‍🔥'],
           reason: 'Found emojis');

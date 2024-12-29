@@ -1,3 +1,9 @@
+## 1.1.6
+
+- Breaking change: The `sequence` field of class `Emoji` has been renamed to `codePoints`.
+- Added new feature: Possibility to search for emoji by name and optionally by status.
+- Added several files with examples of using emoji.
+
 ## 1.1.5
 
 - Fixed bug in decoding Emoji name and presentation
