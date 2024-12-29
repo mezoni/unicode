@@ -7,7 +7,7 @@ void main(List<String> args) {
   final parts = _separateEmoji(str);
   print(parts);
   for (final element in parts) {
-    final kind = element.$1 ? 'Emoji:  ' : 'Regular:';
+    final kind = element.$1 ? 'Emoji  :' : 'Regular:';
     print(
       '$kind "${element.$2}"',
     );
