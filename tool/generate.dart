@@ -503,28 +503,38 @@ void _generateEmoji() {
       continue;
     }
 
+    String getRest(String text, int sep, int count) {
+      var indexCount = 0;
+      final charCodes = text.codeUnits.skipWhile((e) {
+        if (e == sep) {
+          indexCount++;
+        }
+
+        return indexCount < count;
+      }).toList();
+      return charCodes.isEmpty ? '' : String.fromCharCodes(charCodes.skip(1));
+    }
+
     final fields = line.split(';');
     final codes = fields[0].trim();
     final field1 = fields[1];
     final field1Parts = field1.split('#');
     final qualification = field1Parts[0].trim();
-    final comment = field1Parts[1].trim();
-    var indexCount = 0;
-    final nameCodes = comment.codeUnits.skipWhile((e) {
-      if (e == 32) {
-        indexCount++;
-      }
-
-      return indexCount < 2;
-    }).toList();
-    final fullname = String.fromCharCodes(nameCodes).trim();
+    final comment = getRest(line, '#'.codeUnitAt(0), 1).trim();
+    final commentParts = comment.split(' ');
+    final version = commentParts[1];
+    final fullname = getRest(comment, 32, 2);
     final fullnameParts = fullname.split(':');
     var name = fullnameParts[0].trim();
     var presentation = fullnameParts.length > 1 ? fullnameParts[1].trim() : '';
+    if (!version.startsWith('E')) {
+      throw StateError('Invalid version: $version');
+    }
+
     name = name.replaceAll('\'', r"\'");
     presentation = presentation.replaceAll('\'', r"\'");
-    buffer
-        .writeln('$codes:$qualification:$name:$presentation:$group:$subgroup');
+    buffer.writeln(
+        '$codes:$qualification:$name:$presentation:$group:$subgroup:$version');
   }
 
   final packed = gzip.encode('$buffer'.codeUnits);
@@ -551,13 +561,16 @@ class Emoji {
 
   final String subgroup;
 
+  final String version;
+
   Emoji(
       {required this.group,
       required this.name,
       required this.presentation,
       required this.qualification,
       required this.sequence,
-      required this.subgroup});
+      required this.subgroup,
+      required this.version});
 
   @override
   String toString() {
@@ -573,7 +586,6 @@ class Emoji {
     return '\$string \$name: \$presentation';
   }
 }
-
 
 List<Emoji> _build(String data) {
   final result = <Emoji>[];
@@ -598,13 +610,15 @@ List<Emoji> _build(String data) {
     final presentation = fromCache(parts[3]);
     final group = fromCache(parts[4]);
     final subgroup = fromCache(parts[5]);
+    final version = fromCache(parts[6]);
     final emoji = Emoji(
         group: group,
         name: name,
         presentation: presentation,
         qualification: qualification,
         sequence: UnmodifiableListView(sequence),
-        subgroup: subgroup);
+        subgroup: subgroup,
+        version: version);
     result.add(emoji);
   }
 

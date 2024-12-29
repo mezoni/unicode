@@ -1,3 +1,8 @@
+## 1.1.5
+
+- Fixed bug in decoding Emoji name and presentation
+- Added new feature: Possibility to obtain Emoji version.
+
 ## 1.1.4
 
 - Added new feature: Possibility to obtain mapping information from the decomposer.
