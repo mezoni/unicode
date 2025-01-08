@@ -13,6 +13,25 @@ Future<void> main() async {
   _testStringToLetterCase();
   _testCharToLetterCase();
   _testEmoji();
+
+  group('Category', () {
+    test('Other Letter', () {
+      for (final char in '名字'.runes) {
+        expect(unicode.isOtherLetter(char), isTrue);
+      }
+
+      // Symbol
+      expect(unicode.isOtherLetter('⺁'.runes.first), isFalse);
+    });
+
+    test('Other Symbol', () {
+      for (final char in '⺁'.runes) {
+        expect(unicode.isOtherSymbol(char), isTrue);
+      }
+
+      expect(unicode.isOtherSymbol('名'.runes.first), isFalse);
+    });
+  });
 }
 
 const categoryNames = {
@@ -110,6 +129,13 @@ Future<void> _testDatabase() async {
       categoryIds[key] = categoryId++;
     }
 
+    // https://www.unicode.org/reports/tr44/#Code_Point_Ranges
+    bool isStartRange(String name) =>
+        name.startsWith('<') && name.endsWith(', First>');
+    bool isEndRange(String name) =>
+        name.startsWith('<') && name.endsWith(', Last>');
+
+    int? rangeStart;
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
       if (line.startsWith('#') || line.isEmpty) {
@@ -117,94 +143,112 @@ Future<void> _testDatabase() async {
       }
 
       final fields = line.split(';');
-      final character = int.parse(fields[0], radix: 16);
+      final code = int.parse(fields[0], radix: 16);
+      final name = fields[1];
+
+      final ({int start, int end}) range;
+
+      if (rangeStart != null) {
+        assert(isEndRange(name), 'Expecting end range $line');
+        range = (start: rangeStart, end: code);
+        rangeStart = null;
+      } else {
+        if (isStartRange(name)) {
+          rangeStart = code;
+          continue;
+        }
+        range = (start: code, end: code);
+      }
+
       final category = fields[2];
 
-      void testCategory(bool Function(int c) f) {
-        final actual = f(character);
-        expect(actual, true,
-            reason: 'Is category: name: $category, character: $character');
-      }
+      for (var character = range.start; character <= range.end; character++) {
+        void testCategory(bool Function(int c) f) {
+          final actual = f(character);
+          expect(actual, true,
+              reason: 'Is category: name: $category, character: $character');
+        }
 
-      switch (category) {
-        case 'Cn':
-          testCategory(unicode.isNotAssigned);
-        case 'Cc':
-          testCategory(unicode.isControl);
-        case 'Cf':
-          testCategory(unicode.isFormat);
-        case 'Co':
-          testCategory(unicode.isPrivateUse);
-        case 'Cs':
-          testCategory(unicode.isSurrogate);
-        case 'Ll':
-          testCategory(unicode.isLowerCaseLetter);
-        case 'Lm':
-          testCategory(unicode.isModifierLetter);
-        case 'Lo':
-          testCategory(unicode.isOtherLetter);
-        case 'Lt':
-          testCategory(unicode.isTitleCaseLetter);
-        case 'Lu':
-          testCategory(unicode.isUpperCaseLetter);
-        case 'Mc':
-          testCategory(unicode.isSpacingMark);
-        case 'Me':
-          testCategory(unicode.isEnclosingMark);
-        case 'Mn':
-          testCategory(unicode.isNonspacingMark);
-        case 'Nd':
-          testCategory(unicode.isDecimalNumber);
-        case 'Nl':
-          testCategory(unicode.isLetterNumber);
-        case 'No':
-          testCategory(unicode.isOtherNumber);
-        case 'Pc':
-          testCategory(unicode.isConnectorPunctuation);
-        case 'Pd':
-          testCategory(unicode.isDashPunctuation);
-        case 'Pe':
-          testCategory(unicode.isClosePunctuation);
-        case 'Pf':
-          testCategory(unicode.isFinalPunctuation);
-        case 'Pi':
-          testCategory(unicode.isInitialPunctuation);
-        case 'Po':
-          testCategory(unicode.isOtherPunctuation);
-        case 'Ps':
-          testCategory(unicode.isOpenPunctuation);
-        case 'Sc':
-          testCategory(unicode.isCurrencySymbol);
-        case 'Sk':
-          testCategory(unicode.isModifierSymbol);
-        case 'Sm':
-          testCategory(unicode.isMathSymbol);
-        case 'So':
-          testCategory(unicode.isOtherSymbol);
-        case 'Zl':
-          testCategory(unicode.isLineSeparator);
-        case 'Zp':
-          testCategory(unicode.isParagraphSeparator);
-        case 'Zs':
-          testCategory(unicode.isSpaceSeparator);
-      }
+        switch (category) {
+          case 'Cn':
+            testCategory(unicode.isNotAssigned);
+          case 'Cc':
+            testCategory(unicode.isControl);
+          case 'Cf':
+            testCategory(unicode.isFormat);
+          case 'Co':
+            testCategory(unicode.isPrivateUse);
+          case 'Cs':
+            testCategory(unicode.isSurrogate);
+          case 'Ll':
+            testCategory(unicode.isLowerCaseLetter);
+          case 'Lm':
+            testCategory(unicode.isModifierLetter);
+          case 'Lo':
+            testCategory(unicode.isOtherLetter);
+          case 'Lt':
+            testCategory(unicode.isTitleCaseLetter);
+          case 'Lu':
+            testCategory(unicode.isUpperCaseLetter);
+          case 'Mc':
+            testCategory(unicode.isSpacingMark);
+          case 'Me':
+            testCategory(unicode.isEnclosingMark);
+          case 'Mn':
+            testCategory(unicode.isNonspacingMark);
+          case 'Nd':
+            testCategory(unicode.isDecimalNumber);
+          case 'Nl':
+            testCategory(unicode.isLetterNumber);
+          case 'No':
+            testCategory(unicode.isOtherNumber);
+          case 'Pc':
+            testCategory(unicode.isConnectorPunctuation);
+          case 'Pd':
+            testCategory(unicode.isDashPunctuation);
+          case 'Pe':
+            testCategory(unicode.isClosePunctuation);
+          case 'Pf':
+            testCategory(unicode.isFinalPunctuation);
+          case 'Pi':
+            testCategory(unicode.isInitialPunctuation);
+          case 'Po':
+            testCategory(unicode.isOtherPunctuation);
+          case 'Ps':
+            testCategory(unicode.isOpenPunctuation);
+          case 'Sc':
+            testCategory(unicode.isCurrencySymbol);
+          case 'Sk':
+            testCategory(unicode.isModifierSymbol);
+          case 'Sm':
+            testCategory(unicode.isMathSymbol);
+          case 'So':
+            testCategory(unicode.isOtherSymbol);
+          case 'Zl':
+            testCategory(unicode.isLineSeparator);
+          case 'Zp':
+            testCategory(unicode.isParagraphSeparator);
+          case 'Zs':
+            testCategory(unicode.isSpaceSeparator);
+        }
 
-      if (fields[12].isNotEmpty) {
-        final upperCase = int.parse(fields[12], radix: 16);
-        final r = charToUpperCase(character);
-        expect(r, upperCase, reason: 'charToUpperCase(): $character');
-      }
+        if (fields[12].isNotEmpty) {
+          final upperCase = int.parse(fields[12], radix: 16);
+          final r = charToUpperCase(character);
+          expect(r, upperCase, reason: 'charToUpperCase(): $character');
+        }
 
-      if (fields[13].isNotEmpty) {
-        final lowerCase = int.parse(fields[13], radix: 16);
-        final r = charToLowerCase(character);
-        expect(r, lowerCase, reason: 'charToLowerCase(): $character');
-      }
+        if (fields[13].isNotEmpty) {
+          final lowerCase = int.parse(fields[13], radix: 16);
+          final r = charToLowerCase(character);
+          expect(r, lowerCase, reason: 'charToLowerCase(): $character');
+        }
 
-      if (fields[14].isNotEmpty) {
-        final titleCase = int.parse(fields[14], radix: 16);
-        final r = charToTitleCase(character);
-        expect(r, titleCase, reason: 'charToTitleCase(): $character');
+        if (fields[14].isNotEmpty) {
+          final titleCase = int.parse(fields[14], radix: 16);
+          final r = charToTitleCase(character);
+          expect(r, titleCase, reason: 'charToTitleCase(): $character');
+        }
       }
     }
   });
