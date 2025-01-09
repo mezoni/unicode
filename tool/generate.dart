@@ -20,33 +20,28 @@ void _generate() {
   final titleCaseLetters = <int, List<(int, int)>>{};
   final bidiClasses = <String, List<(int, int)>>{};
   final decompositions = <String, Map<int, List<int>>>{};
-  for (final line in lines) {
-    if (line.startsWith('#') || line.isEmpty) {
-      continue;
-    }
 
-    final fields = line.split(';');
-    final code = int.parse(fields[0], radix: 16);
+  void addRange(int start, int end, List<String> fields) {
     final category = fields[2];
     if (fields[4].isNotEmpty) {
       final bidiClass = fields[4];
-      (bidiClasses[bidiClass] ??= []).add((code, code));
+      (bidiClasses[bidiClass] ??= []).add((start, end));
     }
 
-    (categories[category] ??= []).add((code, code));
+    (categories[category] ??= []).add((start, end));
     if (fields[12].isNotEmpty) {
-      final delta = int.parse(fields[12], radix: 16) - code;
-      (upperCaseLetters[delta] ??= []).add((code, code));
+      final delta = int.parse(fields[12], radix: 16) - start;
+      (upperCaseLetters[delta] ??= []).add((start, end));
     }
 
     if (fields[13].isNotEmpty) {
-      final delta = int.parse(fields[13], radix: 16) - code;
-      (lowerCaseLetters[delta] ??= []).add((code, code));
+      final delta = int.parse(fields[13], radix: 16) - start;
+      (lowerCaseLetters[delta] ??= []).add((start, end));
     }
 
     if (fields[14].isNotEmpty) {
-      final delta = int.parse(fields[14], radix: 16) - code;
-      (titleCaseLetters[delta] ??= []).add((code, code));
+      final delta = int.parse(fields[14], radix: 16) - start;
+      (titleCaseLetters[delta] ??= []).add((start, end));
     }
 
     if (fields[5].isNotEmpty) {
@@ -64,8 +59,39 @@ void _generate() {
           .split(' ')
           .map((e) => int.parse(e, radix: 16))
           .toList();
-      (decompositions[type] ??= {})[code] = codes;
+      (decompositions[type] ??= {})[start] = codes;
     }
+  }
+
+  // https://www.unicode.org/reports/tr44/#Code_Point_Ranges
+  bool isStartRange(String name) =>
+      name.startsWith('<') && name.endsWith(', First>');
+  bool isEndRange(String name) =>
+      name.startsWith('<') && name.endsWith(', Last>');
+
+  int? rangeStart;
+  for (final line in lines) {
+    if (line.startsWith('#') || line.isEmpty) {
+      continue;
+    }
+
+    final fields = line.split(';');
+    final code = int.parse(fields[0], radix: 16);
+    final name = fields[1];
+
+    if (rangeStart != null) {
+      assert(isEndRange(name), 'Expecting end range $line');
+      addRange(rangeStart, code, fields);
+      rangeStart = null;
+      continue;
+    }
+
+    if (isStartRange(name)) {
+      rangeStart = code;
+      continue;
+    }
+
+    addRange(code, code, fields);
   }
 
   _generateCategories(
