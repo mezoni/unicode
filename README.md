@@ -3,7 +3,7 @@ unicode
 
 Unicode characters library auto generated from http://www.unicode.org.
 
-Version 1.1.7
+Version 1.1.8
 
 Unicode Version 16.0.0
 

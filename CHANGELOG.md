@@ -1,6 +1,10 @@
+## 1.1.8
+
+- Removed dependency on `dart:io` in emoji code. Added dependency on package `archive` instead.
+
 ## 1.1.7
 
--
+- Fixed bug in generating general categories.
 
 ## 1.1.6
 

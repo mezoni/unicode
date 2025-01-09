@@ -6,9 +6,47 @@ import 'package:simple_sparse_list/ranges_helper.dart';
 import 'camelize.dart';
 
 void main(List<String> args) {
-  _generateEmoji();
   _generate();
   _generateBlocks();
+  _generateEmoji();
+}
+
+const categoryNames = {
+  'Cn': 'NOT_ASSIGNED',
+  'Cc': 'CONTROL',
+  'Cf': 'FORMAT',
+  'Co': 'PRIVATE_USE',
+  'Cs': 'SURROGATE',
+  'Ll': 'LOWER_CASE_LETTER',
+  'Lm': 'MODIFIER_LETTER',
+  'Lo': 'OTHER_LETTER',
+  'Lt': 'TITLE_CASE_LETTER',
+  'Lu': 'UPPER_CASE_LETTER',
+  'Mc': 'SPACING_MARK',
+  'Me': 'ENCLOSING_MARK',
+  'Mn': 'NONSPACING_MARK',
+  'Nd': 'DECIMAL_NUMBER',
+  'Nl': 'LETTER_NUMBER',
+  'No': 'OTHER_NUMBER',
+  'Pc': 'CONNECTOR_PUNCTUATION',
+  'Pd': 'DASH_PUNCTUATION',
+  'Pe': 'CLOSE_PUNCTUATION',
+  'Pf': 'FINAL_PUNCTUATION',
+  'Pi': 'INITIAL_PUNCTUATION',
+  'Po': 'OTHER_PUNCTUATION',
+  'Ps': 'OPEN_PUNCTUATION',
+  'Sc': 'CURRENCY_SYMBOL',
+  'Sk': 'MODIFIER_SYMBOL',
+  'Sm': 'MATH_SYMBOL',
+  'So': 'OTHER_SYMBOL',
+  'Zl': 'LINE_SEPARATOR',
+  'Zp': 'PARAGRAPH_SEPARATOR',
+  'Zs': 'SPACE_SEPARATOR'
+};
+
+String _compress(List<int> data) {
+  final bytes = gzip.encode(data);
+  return base64Encode(bytes);
 }
 
 void _generate() {
@@ -64,10 +102,18 @@ void _generate() {
   }
 
   // https://www.unicode.org/reports/tr44/#Code_Point_Ranges
+  /*
   bool isStartRange(String name) =>
       name.startsWith('<') && name.endsWith(', First>');
   bool isEndRange(String name) =>
       name.startsWith('<') && name.endsWith(', Last>');
+      */
+
+  bool isStartRange(List<String> nameParts) =>
+      nameParts.length > 1 && nameParts.last == 'First';
+
+  bool isEndRange(List<String> nameParts) =>
+      nameParts.length > 1 && nameParts.last == 'Last';
 
   int? rangeStart;
   for (final line in lines) {
@@ -77,16 +123,26 @@ void _generate() {
 
     final fields = line.split(';');
     final code = int.parse(fields[0], radix: 16);
-    final name = fields[1];
+    final field1 = fields[1];
+    final List<String> nameParts;
+    if (field1.startsWith('<')) {
+      nameParts = field1
+          .substring(1, field1.length - 1)
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
+    } else {
+      nameParts = [field1];
+    }
 
     if (rangeStart != null) {
-      assert(isEndRange(name), 'Expecting end range $line');
+      assert(isEndRange(nameParts), 'Expecting end range $line');
       addRange(rangeStart, code, fields);
       rangeStart = null;
       continue;
     }
 
-    if (isStartRange(name)) {
+    if (isStartRange(nameParts)) {
       rangeStart = code;
       continue;
     }
@@ -101,17 +157,7 @@ void _generate() {
 }
 
 void _generateBidiClasses(Map<String, List<(int, int)>> bidiClasses) {
-  const template = '''
-void getBidiClasses() {
   //
-}
-''';
-
-  bidiClasses = _normalize(bidiClasses);
-  for (final entry in bidiClasses.entries) {
-    final key = entry.key;
-    final value = entry.value;
-  }
 }
 
 void _generateBlocks() {
@@ -171,7 +217,7 @@ UnicodeBlock getUnicodeBlock(int character) {
 
 enum UnicodeBlock {${enumValues.join(', ')}}
 
-final _data = SparseList([${data.join(', ')}], UnicodeBlock.noBlock);
+final _data = SparseList([${data.join(', ')}], UnicodeBlock.noBlock, length: 0x110000);
 ''';
 
   File('lib/blocks.dart').writeAsStringSync(template);
@@ -183,40 +229,7 @@ void _generateCategories(
   Map<int, List<(int, int)>> upperCaseLetters,
   Map<int, List<(int, int)>> titleCaseLetters,
 ) {
-  const categoryNames = {
-    'Cn': 'NOT_ASSIGNED',
-    'Cc': 'CONTROL',
-    'Cf': 'FORMAT',
-    'Co': 'PRIVATE_USE',
-    'Cs': 'SURROGATE',
-    'Ll': 'LOWER_CASE_LETTER',
-    'Lm': 'MODIFIER_LETTER',
-    'Lo': 'OTHER_LETTER',
-    'Lt': 'TITLE_CASE_LETTER',
-    'Lu': 'UPPER_CASE_LETTER',
-    'Mc': 'SPACING_MARK',
-    'Me': 'ENCLOSING_MARK',
-    'Mn': 'NONSPACING_MARK',
-    'Nd': 'DECIMAL_NUMBER',
-    'Nl': 'LETTER_NUMBER',
-    'No': 'OTHER_NUMBER',
-    'Pc': 'CONNECTOR_PUNCTUATION',
-    'Pd': 'DASH_PUNCTUATION',
-    'Pe': 'CLOSE_PUNCTUATION',
-    'Pf': 'FINAL_PUNCTUATION',
-    'Pi': 'INITIAL_PUNCTUATION',
-    'Po': 'OTHER_PUNCTUATION',
-    'Ps': 'OPEN_PUNCTUATION',
-    'Sc': 'CURRENCY_SYMBOL',
-    'Sk': 'MODIFIER_SYMBOL',
-    'Sm': 'MATH_SYMBOL',
-    'So': 'OTHER_SYMBOL',
-    'Zl': 'LINE_SEPARATOR',
-    'Zp': 'PARAGRAPH_SEPARATOR',
-    'Zs': 'SPACE_SEPARATOR'
-  };
-
-  const _template = r'''
+  var template = r'''
 import 'package:simple_sparse_list/simple_sparse_list.dart';
 
 {{constants}}
@@ -331,15 +344,15 @@ SparseList<int> _unpack(List<List<int>> data) {
     return a.$2.compareTo(b.$2);
   });
 
-  final list = SparseList(ranges, 0);
+  final list = SparseList(ranges, 0, length: 0x110000);
   return list;
 }
 
-final _lowerCaseList = SparseList([{{lower_case_list}}], null);
+final _lowerCaseList = SparseList([{{lower_case_list}}], null, length: 0x110000);
 
-final _titleCaseList = SparseList([{{title_case_list}}], null);
+final _titleCaseList = SparseList([{{title_case_list}}], null, length: 0x110000);
 
-final _upperCaseList = SparseList([{{upper_case_list}}], null);
+final _upperCaseList = SparseList([{{upper_case_list}}], null, length: 0x110000);
 
 final SparseList<int> _generalCategories = _unpack({{data}});
 ''';
@@ -354,7 +367,6 @@ final SparseList<int> _generalCategories = _unpack({{data}});
     categoryIndexes[key] = index++;
   }
 
-  var template = _template;
   final packedList = <String>[];
   for (final name in categoryNames.keys) {
     final ranges = categories[name] ?? [];
@@ -505,31 +517,19 @@ void _generateEmoji() {
       continue;
     }
 
-    String getRest(String text, int sep, int count) {
-      var indexCount = 0;
-      final codeUnits = text.codeUnits.skipWhile((e) {
-        if (e == sep) {
-          indexCount++;
-        }
-
-        return indexCount < count;
-      }).toList();
-      return codeUnits.isEmpty ? '' : String.fromCharCodes(codeUnits.skip(1));
-    }
-
     final fields = line.split(';');
     final codePoints = fields[0].trim();
     final field1 = fields[1];
     final field1Parts = field1.split('#');
     final status = field1Parts[0].trim();
-    final comment = getRest(line, '#'.codeUnitAt(0), 1).trim();
+    final comment = _getStringRest(line, '#'.codeUnitAt(0), 1).trim();
     if (comment.contains(';')) {
       throw StateError("Comment contains ';'");
     }
 
     final commentParts = comment.split(' ');
     var version = commentParts[1];
-    var name = getRest(comment, 32, 2);
+    var name = _getStringRest(comment, 32, 2);
     if (!version.startsWith('E')) {
       throw StateError('Invalid version: $version');
     }
@@ -539,8 +539,7 @@ void _generateEmoji() {
     buffer.writeln('$codePoints;$status;$name;$group;$subgroup;$version');
   }
 
-  final packed = gzip.encode('$buffer'.codeUnits);
-  final encoded = base64.encode(packed);
+  final compressed = _compress('$buffer'.codeUnits);
   final template = '''
 import 'dart:collection';
 import 'dart:convert';
@@ -718,10 +717,22 @@ List<Emoji> _build(String data) {
   return UnmodifiableListView(result);
 }
 
-final _data = _build('$encoded');
+final _data = _build('$compressed');
 ''';
 
   File('lib/emoji/emoji.dart').writeAsStringSync(template);
+}
+
+String _getStringRest(String text, int char, int count) {
+  var found = 0;
+  final codeUnits = text.codeUnits.skipWhile((e) {
+    if (e == char) {
+      found++;
+    }
+
+    return found < count;
+  }).toList();
+  return codeUnits.isEmpty ? '' : String.fromCharCodes(codeUnits.skip(1));
 }
 
 Map<K, List<(int, int)>> _normalize<K>(Map<K, List<(int, int)>> data) {
