@@ -8,6 +8,6 @@ dependencies:
   archive: ^4.0.2
   simple_sparse_list: ^0.1.4
 dev_dependencies:
-  lints: ^5.1.1
+  lints: ^4.0.0
   sequence_processor: ^0.1.1
   test: ^1.25.8

@@ -543,7 +543,8 @@ void _generateEmoji() {
   final template = '''
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:archive/archive_io.dart';
 
 /// Returns a list of Unicode emoji.
 List<Emoji> getUnicodeEmojiList() => _data;
@@ -664,8 +665,8 @@ class Emoji {
 
 List<Emoji> _build(String data) {
   final result = <Emoji>[];
-  final encoded = base64.decode(data);
-  final charCodes = gzip.decode(encoded);
+  final bytes = base64.decode(data);
+  final charCodes = GZipDecoder().decodeBytes(bytes);
   final source = String.fromCharCodes(charCodes);
   final cache = <String, String>{};
   final lines = const LineSplitter().convert(source);
