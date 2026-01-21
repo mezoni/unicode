@@ -263,10 +263,10 @@ void _testEmoji() {
 
   test('Emoji', () {
     {
-      expect(emojis.length, 5042, reason: 'Emoji list length');
+      expect(emojis.length, 5225, reason: 'Emoji list length');
 
       final count = emojis.map((e) => e.name).toSet().length;
-      expect(count, 3790, reason: 'Emoji name count');
+      expect(count, 3953, reason: 'Emoji name count');
     }
     {
       const r1 = 'I 💗 you! ❤️‍🔥 ';

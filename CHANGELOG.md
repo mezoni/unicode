@@ -1,3 +1,7 @@
+## 1.1.9
+
+- Generation of Unicode 17.0.0
+
 ## 1.1.8
 
 - Removed dependency on `dart:io` in emoji code. Added dependency on package `archive` instead.
@@ -58,7 +62,7 @@
 
 ## 0.2.3
 
-- Generation fo Unicode 13.0.0
+- Generation of Unicode 13.0.0
 
 ## 0.2.2
 
@@ -72,4 +76,4 @@
 ## 0.2.0
 
 - Adaptation to Dart 2.0
-- Generation fo Unicode 12.0.0
+- Generation of Unicode 12.0.0

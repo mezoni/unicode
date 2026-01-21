@@ -1,15 +1,14 @@
-unicode
-=======
+# unicode
 
-Unicode characters library auto generated from http://www.unicode.org.
+Unicode characters library auto generated from <http://www.unicode.org>.
 
-Version 1.1.8
+Version 1.1.9
 
-Unicode Version 16.0.0
+Unicode Version 17.0.0
 
 Examples:
 
-# example/example.dart
+## example/example.dart
 
 ```dart
 import 'package:unicode/blocks.dart';
@@ -61,7 +60,7 @@ extension on int {
 
 Output:
 
-```
+```txt
 я is lowercase letter
 { is open punctuation
 © is other symbol
@@ -71,7 +70,7 @@ Output:
 Ǆ is upper case of ǆ
 ```
 
-# example\emoji\decompose_characters.dart
+## example\emoji\decompose_characters.dart
 
 ```dart
 import 'package:unicode/decomposer.dart';
@@ -114,12 +113,12 @@ extension on String {
 
 Output:
 
-```
+```txt
 𝑻𝒉𝒆 ℚ𝕦𝕚𝕔𝕜 Ｂｒｏｗｎ 🅵🅾🆇 𝔍𝔲𝔪𝔭𝔢𝔡 ⓞⓥⓔⓡ ʇɥǝ 𝗟𝗮𝘇𝘆 𝙳𝚘𝚐
 The Quick Brown FOX Jumped over the Lazy Dog
 ```
 
-# example/get_emoji_by_name.dart
+## example/get_emoji_by_name.dart
 
 ```dart
 import 'dart:math';
@@ -181,7 +180,7 @@ String _findEmoji(String fullname, {EmojiStatus? status}) {
 
 Output
 
-```
+```txt
 💘
 🤚🏻
 🥰
@@ -194,7 +193,7 @@ Number of calls: 10000
 Elapsed time (sec): 0.015
 ```
 
-# example/info_about_all_emoji.dart
+## example/info_about_all_emoji.dart
 
 ```dart
 import 'package:unicode/emoji/emoji.dart';
@@ -221,9 +220,9 @@ void main(List<String> args) {
 
 Output:
 
-```
-Total number of emojis: 5042
-Total number of unique emojis: 3790
+```txt
+Total number of emojis: 5225
+Total number of unique emojis: 3953
 Activities:
 - award-medal (11)
 - event (5)
@@ -264,6 +263,7 @@ People & Body:
 - person-role (11)
 - person (6)
 - hand-single-finger (18)
+- person-activity (15)
 - person-symbol (13)
 - hands (5)
 - family (6)
@@ -271,7 +271,6 @@ People & Body:
 - hand-fingers-open (17)
 - person-sport (12)
 - hand-fingers-closed (19)
-- person-activity (15)
 - person-resting (14)
 - hand-prop (9)
 Animals & Nature:
@@ -336,7 +335,7 @@ Flags:
 - subdivision-flag (16)
 ```
 
-# example\emoji\remove_emoji.dart
+## example\emoji\remove_emoji.dart
 
 ```dart
 import 'package:sequence_processor/sequence_processor.dart';
@@ -374,12 +373,12 @@ String _removeEmoji(String text) {
 
 Output:
 
-```
+```txt
 I 💗 you! 😘❤️‍🔥
 I  you!
 ```
 
-# example\emoji\separate_emoji_and_regular_text.dart
+## example\emoji\separate_emoji_and_regular_text.dart
 
 ```dart
 import 'package:sequence_processor/sequence_processor.dart';
@@ -446,7 +445,7 @@ List<(bool, String)> _separateEmoji(String text) {
 
 Output:
 
-```
+```txt
 I 💗 you! 😘❤️‍🔥
 [(false, I ), (true, 💗), (false,  you! ), (true, 😘❤️‍🔥), (false,  )]
 Regular: "I "
@@ -456,7 +455,7 @@ Emoji  : "😘❤️‍🔥"
 Regular: " "
 ```
 
-# example\emoji\trim_last_characters.dart
+## example\emoji\trim_last_characters.dart
 
 ```dart
 import 'package:sequence_processor/sequence_processor.dart';
@@ -533,7 +532,7 @@ String _removeLastChars(String text, int n) {
 
 Output:
 
-```
+```txt
 "I 💗 you! 😘❤️‍🔥 "
 "I 💗 you! 😘❤️‍🔥"
 "I 💗 you! 😘"

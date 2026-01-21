@@ -1,5 +1,5 @@
 name: unicode
-version: 1.1.8
+version: 1.1.9
 description: Unicode characters library auto generated from http://www.unicode.org.
 homepage: https://github.com/mezoni/unicode
 environment:
@@ -8,6 +8,6 @@ dependencies:
   archive: ^4.0.2
   simple_sparse_list: ^0.1.4
 dev_dependencies:
-  lints: ^4.0.0
+  lints: ^6.0.0
   sequence_processor: ^0.1.1
   test: ^1.25.8
